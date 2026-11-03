@@ -84,6 +84,13 @@ class YellowFotorama {
     // Add assets only to pages that contain a gallery
     public function onParsePageExtra($page, $name) {
         $output = null;
+        if ($name == "header") {
+            // Header extras are rendered before the page body is parsed.
+            // Inspect raw content here so gallery assets are available in time.
+            if (preg_match('/\\[fotorama(?:\\s|\\])/i', $page->getContentRaw())) {
+                $this->assetsRequired = true;
+            }
+        }
         if ($name == "header" && $this->assetsRequired) {
             $base = $this->yellow->system->get("coreServerBase");
             $directory = $this->yellow->system->get("coreExtensionLocation");
