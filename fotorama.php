@@ -1,60 +1,98 @@
 <?php
-// Fotorama extension, https://github.com/kodersha/yellow-fotorama
+// Fotorama extension for Datenstrom Yellow 1.0
+// https://github.com/kodersha/yellow-fotorama
 
 class YellowFotorama {
-    const VERSION = "0.8.22";
-    public $yellow;         // access to API
+    const VERSION = "1.0.0";
+
+    public $yellow;
+    private $assetsRequired = false;
 
     // Handle initialisation
     public function onLoad($yellow) {
         $this->yellow = $yellow;
     }
-    
-    // Handle page content of shortcut
-    public function onParseContentShortcut($page, $name, $text, $type) {
+
+    // Handle page content element
+    public function onParseContentElement($page, $name, $text, $attributes, $type) {
         $output = null;
-        if ($name=="fotorama" && ($type=="block" || $type=="inline")) {
-            list($pattern, $size) = $this->yellow->toolbox->getTextArguments($text);
-            if (is_string_empty($size)) $size = "100%";
-            if (is_string_empty($pattern)) {
-                $pattern = "unknown";
-                $files = $this->yellow->media->clean();
-            } else {
-                $images = $this->yellow->system->get("coreImageLocation");
-                $files = $this->yellow->media->index()->match("#$images$pattern#");
-            }
-            if ($this->yellow->extension->isExisting("image")) {
-                if (!is_array_empty($files)) {
-                    $page->setLastModified($files->getModified());
-                    $output = '<div class="fotorama-images">';
-                        $output .= '<div class="fotorama" data-allowfullscreen="true" data-fit="cover">';
-                        foreach ($files as $file) {
-                            list($src, $width, $height) = $this->yellow->extension->get("image")->getImageInformation($file->fileName, $size, $size);
-                            list($widthInput, $heightInput) = $this->yellow->toolbox->detectImageInformation($file->fileName);
-                            if (!$widthInput || !$heightInput) $widthInput = $heightInput = "500";
-                            $output .= '<img src="'.htmlspecialchars($src).'"';
-                            if ($width && $height) $output .= ' width="'.htmlspecialchars($width).'" height="'.htmlspecialchars($height).'"';
-                            $output .= '/>';
-                        }
-                        $output .= '</div>';
-                    $output .= '</div>';
-                } else {
-                    $page->error(500, "Fotorama '$pattern' does not exist!");
-                }
-            } else {
-                $page->error(500, "Fotorama requires 'image' extension!");
-            }
+        if ($name == "fotorama" && ($type == "block" || $type == "inline")) {
+            $output = $this->getGalleryHtml($page, $text);
         }
         return $output;
     }
 
-    // Handle page extra data
+    // Keep compatibility with older Yellow versions
+    public function onParseContentShortcut($page, $name, $text, $type) {
+        $output = null;
+        if ($name == "fotorama" && ($type == "block" || $type == "inline")) {
+            $output = $this->getGalleryHtml($page, $text);
+        }
+        return $output;
+    }
+
+    // Return gallery HTML
+    private function getGalleryHtml($page, $text) {
+        list($pattern, $size) = $this->yellow->toolbox->getTextArguments($text);
+        if (is_string_empty($pattern)) {
+            $page->error(400, "Fotorama requires an image filename pattern!");
+            return null;
+        }
+        if (is_string_empty($size)) $size = "100%";
+
+        if (!$this->yellow->extension->isExisting("image")) {
+            $page->error(500, "Fotorama requires the Image extension!");
+            return null;
+        }
+
+        $imageLocation = $this->yellow->system->get("coreImageLocation");
+        $pattern = str_replace("#", "\\#", $pattern);
+        $regex = "#".preg_quote($imageLocation, "#").$pattern."#";
+        if (@preg_match($regex, "") === false) {
+            $page->error(400, "Fotorama received an invalid image filename pattern!");
+            return null;
+        }
+
+        $files = $this->yellow->media->index()->match($regex);
+        if ($files->isEmpty()) {
+            $page->error(404, "Fotorama image pattern '$pattern' does not match any files!");
+            return null;
+        }
+
+        $imageExtension = $this->yellow->extension->get("image");
+        $output = '<div class="fotorama-gallery">';
+        $output .= '<div class="fotorama" data-allowfullscreen="true" data-fit="cover">';
+
+        foreach ($files as $file) {
+            list($src, $width, $height) = $imageExtension->getImageInformation($file->fileName, $size, $size);
+            $alt = $file->get("title");
+            $output .= '<img src="'.htmlspecialchars($src, ENT_QUOTES, "UTF-8").'"';
+            if ($width && $height) {
+                $output .= ' width="'.htmlspecialchars($width, ENT_QUOTES, "UTF-8").'"';
+                $output .= ' height="'.htmlspecialchars($height, ENT_QUOTES, "UTF-8").'"';
+            }
+            $output .= ' alt="'.htmlspecialchars($alt, ENT_QUOTES, "UTF-8").'"';
+            $output .= ' loading="lazy" />';
+        }
+
+        $output .= '</div></div>';
+        $page->setLastModified($files->getModified());
+        $this->assetsRequired = true;
+        return $output;
+    }
+
+    // Add assets only to pages that contain a gallery
     public function onParsePageExtra($page, $name) {
         $output = null;
-        if ($name=="header") {
-            $extensionLocation = $this->yellow->system->get("coreServerBase").$this->yellow->system->get("coreExtensionLocation");
-            $output = "<link rel=\"stylesheet\" type=\"text/css\" media=\"all\" href=\"{$extensionLocation}fotorama.css\" />\n";
-            $output .= "<script type=\"text/javascript\" defer=\"defer\" src=\"{$extensionLocation}fotorama.js\"></script>\n";
+        if ($name == "header" && $this->assetsRequired) {
+            $base = $this->yellow->system->get("coreServerBase");
+            $directory = $this->yellow->system->get("coreExtensionLocation");
+            $extensionLocation = rtrim($base, "/")."/".trim($directory, "/")."/";
+            $extensionLocation = htmlspecialchars($extensionLocation, ENT_QUOTES, "UTF-8");
+
+            $output = "<link rel=\"stylesheet\" href=\"{$extensionLocation}fotorama.css\" />\n";
+            $output .= "<script defer src=\"{$extensionLocation}jquery.min.js\"></script>\n";
+            $output .= "<script defer src=\"{$extensionLocation}fotorama.js\"></script>\n";
         }
         return $output;
     }
