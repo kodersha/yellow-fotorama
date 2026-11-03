@@ -1,32 +1,46 @@
-Fotorama extension
-==================
-Fotorama for [Yellow CMS](https://github.com/datenstrom/yellow) - A simple yet powerful responsive jQuery image gallery.
+# Fotorama for Datenstrom Yellow
 
-![Fotorama for Yellow CMS](https://raw.githubusercontent.com/kodersha/yellow-fotorama/master/fotorama-screenshot.png)
+Responsive image galleries powered by [Fotorama 4.6.4](https://github.com/artpolikarpov/fotorama).
 
-Install
--------
-Download [this extension](https://github.com/kodersha/yellow-fotorama/archive/master.zip), put `zip` archive into your `system` folder.
+This extension is updated for **Datenstrom Yellow 1.0** and keeps the original `[fotorama]` content shortcut.
 
-To uninstall delete all plugin files.
+## Requirements
 
-Required
---------
-[jQuery](https://jquery.com) library.
+- Datenstrom Yellow 1.0.
+- The Yellow Image extension.
+- PHP and server requirements supported by your Yellow installation.
 
-How use?
---------
-Make a `[fotorama]` shortcut. The following arguments available:
+jQuery 3.7.1 is included locally. No external CDN or separately installed jQuery library is required.
 
-- `PATTERN` - files name as regular expression.
-- `STYLE` - your custom class for fotorama.
+## Installation
 
-Examples
---------
+1. Download the latest release archive.
+2. Install the extension in your Yellow `system` directory using the usual Yellow extension installation procedure.
+3. Make sure the Yellow Image extension is installed and enabled.
+
+To uninstall, remove the Fotorama extension files, including `fotorama.php`, `fotorama.js`, `fotorama.css`, `fotorama.png`, `fotorama@2x.png`, and `jquery.min.js`.
+
+## Usage
+
+Add a Fotorama shortcut to a page:
+
+```text
+[fotorama image-.*.jpg]
 ```
-[fotorama image-.*.png]
+
+The first argument is a regular expression matched against filenames in the configured Yellow image directory. The optional second argument sets the maximum thumbnail dimensions; the default is `100%` (original image dimensions).
+
+Examples:
+
+```text
+[fotorama image-.*]
+[fotorama vacation-.*\.jpg 800]
 ```
 
-Used
--------
-* **[Fotorama](https://github.com/artpolikarpov/fotorama)** - jQuery gallery by *Artem Polikarpov*.
+The gallery assets are added to the page header only when a valid Fotorama shortcut is present. Images are processed through Yellow's Image extension, which creates thumbnails when needed.
+
+## Included libraries
+
+- [Fotorama 4.6.4](https://github.com/artpolikarpov/fotorama) — jQuery image gallery.
+- [jQuery 3.7.1](https://jquery.com/) — included locally under the MIT license.
+
