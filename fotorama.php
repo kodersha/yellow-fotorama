@@ -3,7 +3,7 @@
 // https://github.com/kodersha/yellow-fotorama
 
 class YellowFotorama {
-    const VERSION = "1.1.1";
+    const VERSION = "1.1.2";
 
     public $yellow;
     private $assetsRequired = false;
@@ -48,23 +48,22 @@ class YellowFotorama {
             return null;
         }
 
-        // Yellow's media index stores filesystem paths in fileName.
-        // findMediaDirectory() returns the corresponding absolute media directory.
-        $imageLocation = $this->yellow->lookup->findMediaDirectory("coreImageLocation");
+        // Match media URLs/locations, not filesystem paths.
+        // Yellow's media index stores the public media location in $file->location.
+        $imageLocation = $this->yellow->system->get("coreImageLocation");
         if (is_string_empty($imageLocation)) {
-            $page->error(500, "Fotorama could not resolve the image directory!");
+            $page->error(500, "Fotorama could not resolve the image location!");
             return null;
         }
-        $regex = "#".preg_quote($imageLocation, "#").str_replace("#", "\\#", $pattern)."#";
+        $regex = "#^".preg_quote($imageLocation, "#").str_replace("#", "\\#", $pattern)."$#";
         if (@preg_match($regex, "") === false) {
             $page->error(400, "Fotorama received an invalid image filename pattern!");
             return null;
         }
 
-        // Match against fileName, not location: the pattern includes a filesystem path.
-        $files = $this->yellow->media->index()->match($regex, false);
+        $files = $this->yellow->media->index()->match($regex);
         if ($files->isEmpty()) {
-            $page->error(404, "Fotorama image pattern '$pattern' does not match any files!");
+            $page->error(404, "Fotorama image pattern '$pattern' does not match any files in '$imageLocation'!");
             return null;
         }
 
