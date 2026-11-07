@@ -3,7 +3,7 @@
 // https://github.com/kodersha/yellow-fotorama
 
 class YellowFotorama {
-    const VERSION = "1.1.0";
+    const VERSION = "1.1.1";
 
     public $yellow;
     private $assetsRequired = false;
@@ -21,7 +21,7 @@ class YellowFotorama {
         return null;
     }
 
-    // Compatibility with Yellow versions using content shortcuts
+    // Compatibility with older Yellow versions using content shortcuts
     public function onParseContentShortcut($page, $name, $text, $type) {
         if ($name=="fotorama" && ($type=="block" || $type=="inline")) {
             return $this->getGalleryHtml($page, $text);
@@ -48,16 +48,21 @@ class YellowFotorama {
             return null;
         }
 
-        // Use Yellow's resolved media directory to support custom media locations.
+        // Yellow's media index stores filesystem paths in fileName.
+        // findMediaDirectory() returns the corresponding absolute media directory.
         $imageLocation = $this->yellow->lookup->findMediaDirectory("coreImageLocation");
-        $pattern = str_replace("#", "\\#", $pattern);
-        $regex = "#".preg_quote($imageLocation, "#").$pattern."#";
+        if (is_string_empty($imageLocation)) {
+            $page->error(500, "Fotorama could not resolve the image directory!");
+            return null;
+        }
+        $regex = "#".preg_quote($imageLocation, "#").str_replace("#", "\\#", $pattern)."#";
         if (@preg_match($regex, "") === false) {
             $page->error(400, "Fotorama received an invalid image filename pattern!");
             return null;
         }
 
-        $files = $this->yellow->media->index()->match($regex);
+        // Match against fileName, not location: the pattern includes a filesystem path.
+        $files = $this->yellow->media->index()->match($regex, false);
         if ($files->isEmpty()) {
             $page->error(404, "Fotorama image pattern '$pattern' does not match any files!");
             return null;
@@ -68,6 +73,7 @@ class YellowFotorama {
         foreach ($files as $file) {
             list($src, $width, $height) = $imageExtension->getImageInformation($file->fileName, $size, $size);
             $alt = $file->get("title");
+            if (is_string_empty($alt)) $alt = basename($file->fileName);
             $output .= '<img src="'.htmlspecialchars($src, ENT_QUOTES, "UTF-8").'"';
             if ($width && $height) {
                 $output .= ' width="'.htmlspecialchars($width, ENT_QUOTES, "UTF-8").'"';
@@ -82,11 +88,11 @@ class YellowFotorama {
         return $output;
     }
 
-    // Add assets to the header only for pages containing the Fotorama shortcut.
+    // Add assets only to pages containing the Fotorama shortcut.
     public function onParsePageExtra($page, $name) {
         if ($name!="header") return null;
 
-        // Header extras are parsed before the body, so inspect the source content.
+        // Header extras are parsed before the body, so inspect the raw page content.
         if (preg_match('/\\[fotorama(?:\\s+[^\\]]*)?\\]/i', $page->getContentRaw())) {
             $this->assetsRequired = true;
         }
