@@ -1,9 +1,9 @@
 <?php
-// Fotorama extension for Datenstrom Yellow 1.0
+// Fotorama extension for Datenstrom Yellow
 // https://github.com/kodersha/yellow-fotorama
 
 class YellowFotorama {
-    const VERSION = "1.0.0";
+    const VERSION = "1.1.0";
 
     public $yellow;
     private $assetsRequired = false;
@@ -15,20 +15,18 @@ class YellowFotorama {
 
     // Handle page content element
     public function onParseContentElement($page, $name, $text, $attributes, $type) {
-        $output = null;
-        if ($name == "fotorama" && ($type == "block" || $type == "inline")) {
-            $output = $this->getGalleryHtml($page, $text);
+        if ($name=="fotorama" && ($type=="block" || $type=="inline")) {
+            return $this->getGalleryHtml($page, $text);
         }
-        return $output;
+        return null;
     }
 
-    // Keep compatibility with older Yellow versions
+    // Compatibility with Yellow versions using content shortcuts
     public function onParseContentShortcut($page, $name, $text, $type) {
-        $output = null;
-        if ($name == "fotorama" && ($type == "block" || $type == "inline")) {
-            $output = $this->getGalleryHtml($page, $text);
+        if ($name=="fotorama" && ($type=="block" || $type=="inline")) {
+            return $this->getGalleryHtml($page, $text);
         }
-        return $output;
+        return null;
     }
 
     // Return gallery HTML
@@ -41,11 +39,17 @@ class YellowFotorama {
         if (is_string_empty($size)) $size = "100%";
 
         if (!$this->yellow->extension->isExisting("image")) {
-            $page->error(500, "Fotorama requires the Image extension!");
+            $page->error(500, "Fotorama requires the Yellow Image extension!");
+            return null;
+        }
+        $imageExtension = $this->yellow->extension->get("image");
+        if (!is_object($imageExtension)) {
+            $page->error(500, "Fotorama could not load the Yellow Image extension!");
             return null;
         }
 
-        $imageLocation = $this->yellow->system->get("coreImageLocation");
+        // Use Yellow's resolved media directory to support custom media locations.
+        $imageLocation = $this->yellow->lookup->findMediaDirectory("coreImageLocation");
         $pattern = str_replace("#", "\\#", $pattern);
         $regex = "#".preg_quote($imageLocation, "#").$pattern."#";
         if (@preg_match($regex, "") === false) {
@@ -59,10 +63,8 @@ class YellowFotorama {
             return null;
         }
 
-        $imageExtension = $this->yellow->extension->get("image");
         $output = '<div class="fotorama-gallery">';
         $output .= '<div class="fotorama" data-allowfullscreen="true" data-fit="cover">';
-
         foreach ($files as $file) {
             list($src, $width, $height) = $imageExtension->getImageInformation($file->fileName, $size, $size);
             $alt = $file->get("title");
@@ -71,36 +73,32 @@ class YellowFotorama {
                 $output .= ' width="'.htmlspecialchars($width, ENT_QUOTES, "UTF-8").'"';
                 $output .= ' height="'.htmlspecialchars($height, ENT_QUOTES, "UTF-8").'"';
             }
-            $output .= ' alt="'.htmlspecialchars($alt, ENT_QUOTES, "UTF-8").'"';
-            $output .= ' loading="lazy" />';
+            $output .= ' alt="'.htmlspecialchars($alt, ENT_QUOTES, "UTF-8").'" loading="lazy" />';
         }
-
         $output .= '</div></div>';
+
         $page->setLastModified($files->getModified());
         $this->assetsRequired = true;
         return $output;
     }
 
-    // Add assets only to pages that contain a gallery
+    // Add assets to the header only for pages containing the Fotorama shortcut.
     public function onParsePageExtra($page, $name) {
-        $output = null;
-        if ($name == "header") {
-            // Header extras are rendered before the page body is parsed.
-            // Inspect raw content here so gallery assets are available in time.
-            if (preg_match('/\\[fotorama(?:\\s|\\])/i', $page->getContentRaw())) {
-                $this->assetsRequired = true;
-            }
-        }
-        if ($name == "header" && $this->assetsRequired) {
-            $base = $this->yellow->system->get("coreServerBase");
-            $directory = $this->yellow->system->get("coreExtensionLocation");
-            $extensionLocation = rtrim($base, "/")."/".trim($directory, "/")."/";
-            $extensionLocation = htmlspecialchars($extensionLocation, ENT_QUOTES, "UTF-8");
+        if ($name!="header") return null;
 
-            $output = "<link rel=\"stylesheet\" href=\"{$extensionLocation}fotorama.css\" />\n";
-            $output .= "<script defer src=\"{$extensionLocation}jquery.min.js\"></script>\n";
-            $output .= "<script defer src=\"{$extensionLocation}fotorama.js\"></script>\n";
+        // Header extras are parsed before the body, so inspect the source content.
+        if (preg_match('/\\[fotorama(?:\\s+[^\\]]*)?\\]/i', $page->getContentRaw())) {
+            $this->assetsRequired = true;
         }
+        if (!$this->assetsRequired) return null;
+
+        $base = rtrim($this->yellow->system->get("coreServerBase"), "/");
+        $directory = trim($this->yellow->system->get("coreExtensionLocation"), "/");
+        $extensionLocation = htmlspecialchars($base."/".$directory."/", ENT_QUOTES, "UTF-8");
+
+        $output = '<link rel="stylesheet" href="'.$extensionLocation.'fotorama.css" />'."\n";
+        $output .= '<script defer src="'.$extensionLocation.'jquery.min.js"></script>'."\n";
+        $output .= '<script defer src="'.$extensionLocation.'fotorama.js"></script>'."\n";
         return $output;
     }
 }
