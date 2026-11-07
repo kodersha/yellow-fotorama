@@ -3,6 +3,7 @@
 // https://github.com/kodersha/yellow-fotorama
 
 class YellowFotorama {
+    fix/media-location-matching
     const VERSION = "1.3.0";
 
     public $yellow;
