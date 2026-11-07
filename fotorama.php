@@ -101,6 +101,19 @@ class YellowFotorama {
         if (!$this->assetsRequired && method_exists($page, "getContentRaw")) {
             $this->assetsRequired = preg_match('/\\[fotorama(?:\\s+[^\\]]*)?\\]/i', $page->getContentRaw())==1;
         }
+
+        // Blog listing layouts render other pages after the header has already
+        // been generated. Their shortcuts therefore cannot set $assetsRequired
+        // in time. Scan the same blog page collection used by blog-start.html.
+        if (!$this->assetsRequired && $page->get("layout")=="blog-start") {
+            foreach ($this->yellow->page->getPages("blog") as $blogPage) {
+                if (method_exists($blogPage, "getContentRaw") &&
+                    preg_match('/\\[fotorama(?:\\s+[^\\]]*)?\\]/i', $blogPage->getContentRaw())) {
+                    $this->assetsRequired = true;
+                    break;
+                }
+            }
+        }
         if (!$this->assetsRequired) return null;
 
         $base = rtrim($this->yellow->system->get("coreServerBase"), "/");
