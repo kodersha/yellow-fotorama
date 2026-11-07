@@ -1,67 +1,47 @@
 # Fotorama for Datenstrom Yellow
 
-Responsive image galleries for Datenstrom Yellow 1.x, powered by [Fotorama 4.6.4](https://github.com/artpolikarpov/fotorama).
+A lightweight integration of [Fotorama 4.6.4](https://github.com/artpolikarpov/fotorama) for Datenstrom Yellow 1.x.
 
 ## Requirements
 
 - Datenstrom Yellow 1.x.
-- The Yellow Image extension must be installed and enabled.
-- PHP GD (or the image backend required by the installed Yellow Image extension).
-- PHP ZipArchive for installation from a ZIP package through Yellow's pending installer.
+- PHP GD (included in Yellow's normal requirements).
+- PHP ZipArchive only when installing through Yellow's ZIP installer.
 
-jQuery 3.7.1 is bundled locally. The extension does not depend on a CDN or a theme-provided jQuery copy.
+The extension does not require Yellow Image. It reads selected files from Yellow's media index and serves the original files directly, including WebP.
 
-## Install with Yellow's ZIP installer
+jQuery 3.7.1 is bundled locally. No CDN is used.
 
-1. Download the ZIP archive: [yellow-fotorama-main.zip](https://github.com/kodersha/yellow-fotorama/archive/refs/heads/main.zip).
-2. Do **not** extract it.
-3. Copy the ZIP file into your website's `system/extensions/` directory and rename it to `fotorama.zip`.
-4. Open any page of your Yellow website. Yellow detects the pending ZIP package and installs the files declared in `extension.ini`. The ZIP is removed after processing.
-5. Confirm that these files now exist in `system/extensions/`:
-   - `fotorama.php`
-   - `fotorama.js`
-   - `fotorama.css`
-   - `jquery.min.js`
-   - `jquery.LICENSE.txt`
-   - `fotorama.png`
-   - `fotorama@2x.png`
+## Install
 
-The PHP extension and its browser assets belong in `system/extensions/`, **not** in `system/workers/`, `system/themes/` or `media/`. The `extension.ini` file is the installation manifest inside the ZIP; Yellow reads it and places each declared file in its destination.
+1. Download the ZIP archive from the repository.
+2. Copy it into `system/extensions/` as `fotorama.zip`.
+3. Open a page on the Yellow site and allow the ZIP installer to process it.
+4. Confirm that `fotorama.php`, `fotorama.js`, `fotorama.css`, `jquery.min.js`, `jquery.LICENSE.txt`, `fotorama.png`, and `fotorama@2x.png` are installed in `system/workers/`.
 
-If the ZIP remains in `system/extensions/` and nothing happens, check that PHP's ZipArchive extension is enabled, that PHP can write to `system/extensions/`, and inspect `system/extensions/yellow-website.log`.
-
-## Manual installation
-
-If Yellow's ZIP installer is unavailable:
-
-1. Extract the archive outside your website.
-2. Copy the seven runtime files listed above into `system/extensions/`.
-3. Ensure the Yellow Image extension is installed and enabled.
-4. Reload the page containing the gallery.
-
-Do not copy the repository folder itself into `system/extensions/`; copy the individual files so that `fotorama.php` is directly inside that directory.
+For manual installation, copy those seven files directly into `system/workers/`. Do not put the PHP worker in `system/extensions/`: Yellow 1.x loads PHP extensions from `system/workers/`. The `system/extensions/` directory contains configuration files and extension manifests.
 
 ## Usage
 
-Add a shortcut to a Yellow page and list the exact image filenames separated by spaces:
+Use a space-separated list of exact filenames:
 
 ```text
 [fotorama 546465.webp 465464564.webp 6575675.webp]
 ```
 
-Images are displayed in the same order as they appear in the shortcut. Each filename is looked up in Yellow's configured image directory (normally `media/images/`). Filenames must be given without directory paths. WebP files are served directly; other supported formats use the Yellow Image extension.
+The gallery displays images in the exact order specified. Filenames are resolved in Yellow's configured image directory (normally `media/images/`). Do not include directory paths or regular expressions.
 
-If a listed file does not exist, the shortcut reports the missing filename instead of silently omitting it. Fotorama's CSS, jQuery and JavaScript are loaded only on pages containing a Fotorama shortcut.
+If a filename is missing, the extension reports the missing name rather than silently changing the gallery. Multiple Fotorama shortcuts can be used on one page.
+
+## Assets
+
+Yellow 1.x maps files in `system/workers/` to the public `coreAssetLocation` (normally `/assets/`). Fotorama CSS, jQuery, JavaScript and button images are served through that mapping and are added to the page header only when the shortcut is used.
 
 ## Update
 
-Install the newer ZIP package using the same Yellow ZIP installer procedure. Yellow uses the manifest to update the extension files. Existing page content and shortcuts are preserved; no database migration or configuration entry is required.
-
-## Uninstall
-
-Use Yellow's Update extension uninstall command if the extension was installed from the ZIP package. For a manual installation, remove the seven runtime files listed above from `system/extensions/`.
+Install the latest ZIP package using the same procedure. The manifest updates the worker files without changing page content.
 
 ## Included libraries
 
-- [Fotorama 4.6.4](https://github.com/artpolikarpov/fotorama) — image gallery.
-- [jQuery 3.7.1](https://jquery.com/) — bundled locally under its MIT license.
+- Fotorama 4.6.4 — image gallery.
+- jQuery 3.7.1 — JavaScript dependency, MIT license.
