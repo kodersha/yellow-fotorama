@@ -38,9 +38,13 @@ class YellowFotorama {
         }
         if (is_string_empty($size)) $size = "100%";
 
-        $imageExtension = $this->yellow->extension->get("image");
-        if (!$this->yellow->extension->isExisting("image") || !is_object($imageExtension)) {
+        if (!$this->yellow->extension->isExisting("image")) {
             $page->error(500, "Fotorama requires the Yellow Image extension!");
+            return null;
+        }
+        $imageExtension = $this->yellow->extension->get("image");
+        if (!is_object($imageExtension)) {
+            $page->error(500, "Fotorama could not load the Yellow Image extension!");
             return null;
         }
 
