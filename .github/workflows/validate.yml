@@ -1,0 +1,25 @@
+name: Validate extension
+
+on:
+  push:
+    branches: [main, "fix/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  php-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PHP syntax
+        run: php -l fotorama.php
+      - name: Check installer manifest and runtime files
+        shell: bash
+        run: |
+          test -s extension.ini
+          grep -q '^Extension: Fotorama$' extension.ini
+          grep -q '^Version: 1.1.1$' extension.ini
+          for file in fotorama.php fotorama.js fotorama.css jquery.min.js jquery.LICENSE.txt fotorama.png 'fotorama@2x.png'; do
+            test -s "$file"
+            grep -Fq "system/extensions/$file:" extension.ini
+          done
