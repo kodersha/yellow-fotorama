@@ -104,8 +104,8 @@ class YellowFotorama {
         if (!$this->assetsRequired) return null;
 
         $base = rtrim($this->yellow->system->get("coreServerBase"), "/");
-        $extensionDirectory = trim($this->yellow->system->get("coreExtensionLocation"), "/");
-        $assetUrl = $base."/".$extensionDirectory."/";
+        $assetDirectory = trim($this->yellow->system->get("coreAssetLocation"), "/");
+        $assetUrl = $base."/".$assetDirectory."/";
 
         $html = '<link rel="stylesheet" href="'.htmlspecialchars($assetUrl."fotorama.css", ENT_QUOTES, "UTF-8").'" />'."\n";
         $html .= '<script defer src="'.htmlspecialchars($assetUrl."jquery.min.js", ENT_QUOTES, "UTF-8").'"></script>'."\n";
