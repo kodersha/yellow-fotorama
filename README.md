@@ -43,22 +43,15 @@ Do not copy the repository folder itself into `system/extensions/`; copy the ind
 
 ## Usage
 
-Add a shortcut to a Yellow page:
+Add a shortcut to a Yellow page and list the exact image filenames separated by spaces:
 
 ```text
-[fotorama image-.*.jpg]
+[fotorama 546465.webp 465464564.webp 6575675.webp]
 ```
 
-The first argument is a regular expression matched against files in Yellow's configured image directory. The optional second argument sets the thumbnail width and height; the default is `100%`.
+Images are displayed in the same order as they appear in the shortcut. Each filename is looked up in Yellow's configured image directory (normally `media/images/`). Filenames must be given without directory paths. WebP files are served directly; other supported formats use the Yellow Image extension.
 
-Examples:
-
-```text
-[fotorama image-.*]
-[fotorama vacation-.*\\.jpg 800]
-```
-
-The extension uses Yellow's media index and the Yellow Image extension to generate image URLs and thumbnails. It supports custom image-directory locations. Fotorama's CSS, jQuery and JavaScript are loaded only on pages containing a Fotorama shortcut.
+If a listed file does not exist, the shortcut reports the missing filename instead of silently omitting it. Fotorama's CSS, jQuery and JavaScript are loaded only on pages containing a Fotorama shortcut.
 
 ## Update
 

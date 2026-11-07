@@ -3,7 +3,7 @@
 // https://github.com/kodersha/yellow-fotorama
 
 class YellowFotorama {
-    const VERSION = "1.2.0";
+    const VERSION = "1.3.0";
 
     public $yellow;
     private $assetsRequired = false;
@@ -27,12 +27,11 @@ class YellowFotorama {
     }
 
     private function getGalleryHtml($page, $text) {
-        list($pattern, $size) = $this->yellow->toolbox->getTextArguments($text);
-        if (is_string_empty($pattern)) {
-            $page->error(400, "Fotorama requires an image filename pattern!");
+        $imageNames = preg_split('/\s+/', trim($text), -1, PREG_SPLIT_NO_EMPTY);
+        if (empty($imageNames)) {
+            $page->error(400, "Fotorama requires one or more image filenames!");
             return null;
         }
-        if (is_string_empty($size)) $size = "100%";
 
         if (!$this->yellow->extension->isExisting("image")) {
             $page->error(500, "Fotorama requires the Yellow Image extension!");
@@ -44,27 +43,36 @@ class YellowFotorama {
             return null;
         }
 
-        // Match the filename, not the absolute filesystem path. Yellow media
-        // entries store their public URL in location and their disk path in fileName.
-        $regex = "#^".str_replace("#", "\\#", $pattern)."$#i";
-        if (@preg_match($regex, "") === false) {
-            $page->error(400, "Fotorama received an invalid image filename pattern!");
-            return null;
-        }
-
-        $files = $this->yellow->media->index()->match(
+        // Build a filename index from Yellow's configured image directory.
+        // Explicit names are then emitted in exactly the order used in the shortcut.
+        $mediaFiles = $this->yellow->media->index()->match(
             "#^".preg_quote($this->yellow->system->get("coreImageLocation"), "#").".+#",
             true
         );
-        $matchedFiles = array();
-        foreach ($files as $file) {
+        $filesByName = array();
+        foreach ($mediaFiles as $file) {
             $fileName = basename(str_replace("\\", "/", $file->location));
-            if (preg_match($regex, $fileName)) {
-                $matchedFiles[] = $file;
+            $filesByName[$fileName] = $file;
+        }
+
+        $matchedFiles = array();
+        $missingFiles = array();
+        foreach ($imageNames as $imageName) {
+            // Accept filenames only, not paths or traversal segments.
+            if ($imageName!==basename(str_replace("\\", "/", $imageName)) ||
+                $imageName=="." || $imageName==".." ||
+                strpos($imageName, "/")!==false || strpos($imageName, "\\")!==false) {
+                $missingFiles[] = $imageName;
+                continue;
+            }
+            if (isset($filesByName[$imageName])) {
+                $matchedFiles[] = $filesByName[$imageName];
+            } else {
+                $missingFiles[] = $imageName;
             }
         }
-        if (empty($matchedFiles)) {
-            $page->error(404, "Fotorama image filename pattern '$pattern' does not match files in ".$this->yellow->system->get("coreImageLocation")."!");
+        if (!empty($missingFiles)) {
+            $page->error(404, "Fotorama image files not found in ".$this->yellow->system->get("coreImageLocation").": ".implode(", ", $missingFiles));
             return null;
         }
 
@@ -74,15 +82,14 @@ class YellowFotorama {
         foreach ($matchedFiles as $file) {
             $extension = strtolower(pathinfo($file->fileName, PATHINFO_EXTENSION));
             if ($extension=="webp") {
-                // The site's WebP worker removes the original JPEG/PNG after
-                // conversion. Serve the resulting WebP directly; Yellow Image
-                // cannot resize WebP thumbnails on its own.
+                // Serve WebP directly because the site's WebP worker removes
+                // the original JPEG/PNG after conversion.
                 $src = $this->yellow->system->get("coreServerBase").$file->location;
                 list($width, $height, $orientation, $type) =
                     $this->yellow->toolbox->detectImageInformation($file->fileName);
             } else {
                 list($src, $width, $height) =
-                    $imageExtension->getImageInformation($file->fileName, $size, $size);
+                    $imageExtension->getImageInformation($file->fileName, "100%", "100%");
             }
 
             $alt = $file->get("title");
