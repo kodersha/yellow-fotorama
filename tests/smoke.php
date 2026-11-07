@@ -124,7 +124,7 @@ $extension = new YellowFotorama();
 $extension->onLoad($yellow);
 $html = $extension->onParseContentElement($page, "fotorama", ".*\\.jpg", "", "block");
 
-if (!is_string($html) || strpos($html, "One &amp; Two")===false || strpos($html, "Two</")!==false || $page->errorCode!=0) {
+if (!is_string($html) || strpos($html, "One &amp; Two")===false || substr_count($html, "<img ")!=1 || $page->errorCode!=0) {
     fwrite(STDERR, "Fotorama media-index matching test failed.\n");
     exit(1);
 }
