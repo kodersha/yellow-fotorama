@@ -93,7 +93,7 @@ class YellowFotorama {
                 $output .= ' height="'.htmlspecialchars($height, ENT_QUOTES, "UTF-8").'"';
             }
             $output .= ' alt="'.htmlspecialchars($alt, ENT_QUOTES, "UTF-8").'" loading="lazy" />';
-            $modified = max($modified, $file->modified);
+            $modified = max($modified, $this->yellow->toolbox->getFileModified($file->fileName));
         }
         $output .= '</div></div>';
 
