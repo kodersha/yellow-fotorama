@@ -5,10 +5,10 @@ A lightweight integration of [Fotorama 4.6.4](https://github.com/artpolikarpov/f
 ## Requirements
 
 - Datenstrom Yellow 1.x.
-- PHP with access to the site's media files.
+- PHP GD (included in Yellow's normal requirements).
 - PHP ZipArchive only when installing through Yellow's ZIP installer.
 
-The extension does not require Yellow Image. It reads the selected media files from Yellow's media index and serves the original files directly, including WebP.
+The extension does not require Yellow Image. It reads selected files from Yellow's media index and serves the original files directly, including WebP.
 
 jQuery 3.7.1 is bundled locally. No CDN is used.
 
@@ -17,9 +17,9 @@ jQuery 3.7.1 is bundled locally. No CDN is used.
 1. Download the ZIP archive from the repository.
 2. Copy it into `system/extensions/` as `fotorama.zip`.
 3. Open a page on the Yellow site and allow the ZIP installer to process it.
-4. Check that the following files exist in `system/extensions/`: `fotorama.php`, `fotorama.js`, `fotorama.css`, `jquery.min.js`, `jquery.LICENSE.txt`, `fotorama.png`, and `fotorama@2x.png`.
+4. Confirm that `fotorama.php`, `fotorama.js`, `fotorama.css`, `jquery.min.js`, `jquery.LICENSE.txt`, `fotorama.png`, and `fotorama@2x.png` are installed in `system/workers/`.
 
-For manual installation, extract the archive and copy those seven files directly into `system/extensions/`.
+For manual installation, copy those seven files directly into `system/workers/`. Do not put the PHP worker in `system/extensions/`: Yellow 1.x loads PHP extensions from `system/workers/`. The `system/extensions/` directory contains configuration files and extension manifests.
 
 ## Usage
 
@@ -35,11 +35,11 @@ If a filename is missing, the extension reports the missing name rather than sil
 
 ## Assets
 
-Fotorama CSS, jQuery and JavaScript are added to the page header only when the page contains a Fotorama shortcut. All assets are served locally from `system/extensions/`.
+Yellow 1.x maps files in `system/workers/` to the public `coreAssetLocation` (normally `/assets/`). Fotorama CSS, jQuery, JavaScript and button images are served through that mapping and are added to the page header only when the shortcut is used.
 
 ## Update
 
-Install the latest ZIP package using the same procedure. The manifest updates the extension files without changing page content.
+Install the latest ZIP package using the same procedure. The manifest updates the worker files without changing page content.
 
 ## Included libraries
 
