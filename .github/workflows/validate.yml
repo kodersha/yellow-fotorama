@@ -13,6 +13,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check PHP syntax
         run: php -l fotorama.php
+      - name: Run gallery smoke tests
+        run: php tests/smoke.php
       - name: Check installer manifest and runtime files
         shell: bash
         run: |
